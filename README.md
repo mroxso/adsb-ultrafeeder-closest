@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ADSB Ultrafeeder Closest
+
+## Overview
+
+ADSB Ultrafeeder Closest is a web application that displays the closest flight detected by an ADSB ultrafeeder. The site provides real-time flight information and a user-friendly interface for aviation enthusiasts and professionals.
+
+## Features
+
+- Shows the closest flight from ADSB ultrafeeder data
+- Modern, responsive UI
+- Real-time updates
+
+## Tech Stack
+
+- **Next.js** – React framework for building the web app
+- **TailwindCSS** – Utility-first CSS framework for rapid UI development
+- **shadcn/ui** – Component library for beautiful, accessible UI elements
+- **ADSB Ultrafeeder** – Source for live flight information
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**
+	```bash
+	npm install
+	```
+2. **Start the development server**
+	```bash
+	npm run dev
+	```
+3. **Access the app**
+	Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Usage
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The homepage displays the closest flight detected by your configured ADSB ultrafeeder. Styling is provided by TailwindCSS and shadcn/ui for a modern look and feel.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Make sure your ADSB ultrafeeder is running and accessible. The app will fetch flight data from your ultrafeeder instance. Configuration options can be set in the environment or via the app settings (see documentation for details).
