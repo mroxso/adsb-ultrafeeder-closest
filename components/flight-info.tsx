@@ -43,6 +43,15 @@ interface Aircraft {
   seen?: number;
   rssi?: number;
   distance?: number; // We'll calculate this
+  // Extended flight information (to be populated when available)
+  from_iata?: string;
+  to_iata?: string;
+  from_city?: string;
+  to_city?: string;
+  flight_number?: string;
+  airline?: string;
+  status?: string;
+  verticalRate?: number; // Climbing or descending
 }
 
 interface AircraftData {
@@ -140,10 +149,11 @@ export function ClosestFlight() {
       }
     };
     
+    // Initial fetch
     fetchData();
     
-    // Set up polling interval (every 5 seconds)
-    const intervalId = setInterval(fetchData, 5000);
+    // Set up polling interval (every 3 seconds for more responsive updates)
+    const intervalId = setInterval(fetchData, 3000);
     
     // Clean up on unmount
     return () => clearInterval(intervalId);
@@ -162,7 +172,12 @@ export function ClosestFlight() {
   }
   
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto">
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Nearest Flight</h1>
+        <p className="text-lg text-muted-foreground">Real-time information about the aircraft closest to your location</p>
+      </div>
+      
       {loading && !closestAircraft ? (
         <FlightSkeleton />
       ) : (
@@ -198,13 +213,23 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
 
   // Format altitude
   const altitude = aircraft.alt_baro !== undefined 
-    ? `${aircraft.alt_baro} ft`
+    ? `${aircraft.alt_baro.toLocaleString()} ft`
     : 'Unknown';
+
+  // Format altitude in meters for better readability
+  const altitudeMeters = aircraft.alt_baro !== undefined
+    ? `${Math.round(aircraft.alt_baro * 0.3048).toLocaleString()} m`
+    : '';
 
   // Format speed
   const speed = aircraft.gs !== undefined 
     ? `${aircraft.gs} knots`
     : 'Unknown';
+    
+  // Format speed in km/h for better readability
+  const speedKmh = aircraft.gs !== undefined
+    ? `${Math.round(aircraft.gs * 1.852).toLocaleString()} km/h`
+    : '';
 
   // Format heading as cardinal direction
   const getCardinalDirection = (angle: number | undefined) => {
@@ -216,49 +241,136 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
   };
   
   const heading = getCardinalDirection(aircraft.track);
+  
+  // Format flight status
+  const getFlightStatus = () => {
+    if (aircraft.status) return aircraft.status;
+    
+    if (aircraft.verticalRate !== undefined) {
+      if (aircraft.verticalRate > 300) return "Climbing";
+      if (aircraft.verticalRate < -300) return "Descending";
+      return "Level Flight";
+    }
+    
+    if (aircraft.baro_rate !== undefined) {
+      if (aircraft.baro_rate > 300) return "Climbing";
+      if (aircraft.baro_rate < -300) return "Descending";
+      return "Level Flight";
+    }
+    
+    return "En Route";
+  };
+  
+  const flightStatus = getFlightStatus();
+  
+  // Get status badge color
+  const getStatusColor = () => {
+    switch (flightStatus) {
+      case "Climbing": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "Descending": return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300";
+      case "Level Flight": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      default: return "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300";
+    }
+  };
+  
+  // Format vertical rate
+  const verticalRate = (aircraft.verticalRate !== undefined ? aircraft.verticalRate : aircraft.baro_rate);
+  const formattedVerticalRate = verticalRate !== undefined 
+    ? `${verticalRate > 0 ? '+' : ''}${verticalRate} ft/min`
+    : '';
+  
+  // Get flight number and airline
+  const flightNumber = aircraft.flight_number || (aircraft.flight ? aircraft.flight.trim() : '');
+  const airline = aircraft.airline || '';
+  
+  // Determine flight route
+  const hasRoute = aircraft.from_iata && aircraft.to_iata;
+  const routeDisplay = hasRoute 
+    ? `${aircraft.from_iata} → ${aircraft.to_iata}`
+    : '';
+    
+  const originDestination = hasRoute
+    ? `${aircraft.from_city || aircraft.from_iata} to ${aircraft.to_city || aircraft.to_iata}`
+    : 'Route information unavailable';
 
   return (
-    <Card className="w-full h-full shadow-lg">
-      <CardHeader className="bg-card border-b">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-3xl md:text-4xl">
-              {aircraft.flight 
-                ? aircraft.flight.trim() 
-                : `Unknown (${aircraft.hex})`}
-            </CardTitle>
-            <CardDescription className="text-lg mt-2">
-              Closest Aircraft
-            </CardDescription>
+    <Card className="w-full h-full shadow-lg border-2 border-slate-200 dark:border-slate-800">
+      <CardHeader className="bg-card border-b pb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-3xl md:text-5xl font-bold">
+                {flightNumber || `Unknown (${aircraft.hex.toUpperCase()})`}
+              </CardTitle>
+              <Badge className={`text-sm md:text-base px-3 py-1 ${getStatusColor()}`}>
+                {flightStatus}
+              </Badge>
+            </div>
+            
+            {airline && (
+              <div className="text-xl md:text-2xl mt-1 font-medium text-muted-foreground">
+                {airline}
+              </div>
+            )}
+            
+            {routeDisplay && (
+              <div className="text-lg md:text-xl mt-2 font-semibold">
+                {routeDisplay}
+              </div>
+            )}
+            
+            <div className="text-base md:text-lg mt-1 text-muted-foreground">
+              {originDestination}
+            </div>
           </div>
-          <Badge variant="outline" className="text-sm md:text-base px-3 py-1">
+          
+          <Badge variant="outline" className="text-xl md:text-2xl px-4 py-2 mt-1 md:mt-0 rounded-md bg-primary/10">
             {distance}
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
+      <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-lg">
+        <div className="space-y-5">
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Altitude</h3>
-            <p className="text-2xl font-semibold">{altitude}</p>
+            <h3 className="text-base font-medium text-muted-foreground mb-1">Altitude</h3>
+            <p className="text-2xl md:text-3xl font-semibold flex items-center">
+              {altitude}
+              {altitudeMeters && (
+                <span className="text-base md:text-lg ml-2 text-muted-foreground">
+                  ({altitudeMeters})
+                </span>
+              )}
+            </p>
+            {formattedVerticalRate && (
+              <p className="text-base mt-1 text-muted-foreground">
+                {formattedVerticalRate}
+              </p>
+            )}
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Speed</h3>
-            <p className="text-2xl font-semibold">{speed}</p>
+            <h3 className="text-base font-medium text-muted-foreground mb-1">Speed</h3>
+            <p className="text-2xl md:text-3xl font-semibold flex items-center">
+              {speed}
+              {speedKmh && (
+                <span className="text-base md:text-lg ml-2 text-muted-foreground">
+                  ({speedKmh})
+                </span>
+              )}
+            </p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Heading</h3>
-            <p className="text-2xl font-semibold">{heading}</p>
+            <h3 className="text-base font-medium text-muted-foreground mb-1">Heading</h3>
+            <p className="text-2xl md:text-3xl font-semibold">{heading}</p>
           </div>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Coordinates</h3>
-            <p className="text-xl font-medium">
+            <h3 className="text-base font-medium text-muted-foreground mb-1">Coordinates</h3>
+            <p className="text-xl md:text-2xl font-medium">
               {aircraft.lat !== undefined && aircraft.lon !== undefined 
                 ? `${aircraft.lat.toFixed(5)}, ${aircraft.lon.toFixed(5)}`
                 : 'Unknown'}
@@ -266,22 +378,22 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Squawk</h3>
-            <p className="text-xl font-medium">{aircraft.squawk || 'N/A'}</p>
+            <h3 className="text-base font-medium text-muted-foreground mb-1">Squawk</h3>
+            <p className="text-xl md:text-2xl font-medium">{aircraft.squawk || 'N/A'}</p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">ICAO</h3>
-            <p className="text-xl font-medium">{aircraft.hex.toUpperCase()}</p>
+            <h3 className="text-base font-medium text-muted-foreground mb-1">ICAO</h3>
+            <p className="text-xl md:text-2xl font-medium">{aircraft.hex.toUpperCase()}</p>
           </div>
         </div>
       </CardContent>
       
       <CardFooter className="border-t pt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-base text-muted-foreground">
           Last seen: {aircraft.seen !== undefined ? `${aircraft.seen.toFixed(0)} seconds ago` : 'Unknown'}
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-base text-muted-foreground">
           Signal: {aircraft.rssi !== undefined ? `${aircraft.rssi.toFixed(1)} dBFS` : 'Unknown'}
         </div>
       </CardFooter>
@@ -291,40 +403,46 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
 
 function FlightSkeleton() {
   return (
-    <Card className="w-full h-full shadow-lg">
+    <Card className="w-full h-full shadow-lg border-2 border-slate-200 dark:border-slate-800">
       <CardHeader className="bg-primary/5">
-        <div className="flex justify-between items-start">
-          <div>
-            <Skeleton className="h-10 w-48 mb-2" />
-            <Skeleton className="h-5 w-32" />
+        <div className="flex flex-col md:flex-row justify-between items-start gap-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-12 w-48 mb-2" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+            <Skeleton className="h-6 w-40 my-2" />
+            <Skeleton className="h-6 w-64 my-2" />
+            <Skeleton className="h-5 w-72" />
           </div>
-          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-10 w-24" />
         </div>
       </CardHeader>
       
       <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
+        <div className="space-y-5">
           {[...Array(3)].map((_, i) => (
             <div key={`skeleton-left-${i}`}>
-              <Skeleton className="h-4 w-20 mb-2" />
-              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-10 w-40 mb-1" />
+              {i === 0 && <Skeleton className="h-4 w-32" />}
             </div>
           ))}
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-5">
           {[...Array(3)].map((_, i) => (
             <div key={`skeleton-right-${i}`}>
-              <Skeleton className="h-4 w-20 mb-2" />
-              <Skeleton className="h-8 w-36" />
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-8 w-48" />
             </div>
           ))}
         </div>
       </CardContent>
       
       <CardFooter className="border-t pt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-5 w-40" />
       </CardFooter>
     </Card>
   );
