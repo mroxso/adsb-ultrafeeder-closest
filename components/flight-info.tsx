@@ -219,7 +219,7 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
 
   return (
     <Card className="w-full h-full shadow-lg">
-      <CardHeader className="bg-primary/5">
+      <CardHeader className="bg-card border-b">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-3xl md:text-4xl">
