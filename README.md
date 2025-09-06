@@ -36,4 +36,15 @@ The homepage displays the closest flight detected by your configured ADSB ultraf
 
 ## Configuration
 
-Make sure your ADSB ultrafeeder is running and accessible. The app will fetch flight data from your ultrafeeder instance. Configuration options can be set in the environment or via the app settings (see documentation for details).
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+# Home coordinates for distance calculation
+NEXT_PUBLIC_HOME_LAT=48.1351  # Replace with your latitude
+NEXT_PUBLIC_HOME_LON=11.5820  # Replace with your longitude
+
+# ADSB Ultrafeeder URL (default is localhost:8080 if not set)
+NEXT_PUBLIC_ADSB_ULTRAFEEDER_URL=http://localhost:8080/data/aircraft.json
+```
+
+Make sure your ADSB ultrafeeder is running and accessible. The app will fetch flight data from your ultrafeeder instance.
