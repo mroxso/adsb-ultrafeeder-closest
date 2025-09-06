@@ -18,6 +18,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 interface Aircraft {
   hex: string;
   flight?: string;
+  r?: string;         // Registration 
+  t?: string;         // Type
+  desc?: string;      // Description
   alt_baro?: number;
   alt_geom?: number;
   gs?: number;
@@ -196,14 +199,14 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
       : `${aircraft.distance.toFixed(1)} km`
     : 'Unknown';
 
-  // Format altitude
+  // Convert and format altitude (feet to kilometers)
   const altitude = aircraft.alt_baro !== undefined 
-    ? `${aircraft.alt_baro} ft`
+    ? `${(aircraft.alt_baro * 0.0003048).toFixed(2)} km (${aircraft.alt_baro} ft)`
     : 'Unknown';
 
-  // Format speed
+  // Convert and format speed (knots to km/h)
   const speed = aircraft.gs !== undefined 
-    ? `${aircraft.gs} knots`
+    ? `${(aircraft.gs * 1.852).toFixed(0)} km/h (${aircraft.gs} knots)`
     : 'Unknown';
 
   // Format heading as cardinal direction
@@ -228,7 +231,12 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
                 : `Unknown (${aircraft.hex})`}
             </CardTitle>
             <CardDescription className="text-lg mt-2">
-              Closest Aircraft
+              {aircraft.r || aircraft.t ? (
+                <span>
+                  {aircraft.r && `${aircraft.r} • `}
+                  {aircraft.t && aircraft.desc ? `${aircraft.desc}` : aircraft.t}
+                </span>
+              ) : 'Closest Aircraft'}
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-sm md:text-base px-3 py-1">
@@ -252,6 +260,15 @@ function FlightCard({ aircraft, homeLat, homeLon }: {
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Heading</h3>
             <p className="text-2xl font-semibold">{heading}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">Vertical Speed</h3>
+            <p className="text-2xl font-semibold">
+              {aircraft.baro_rate !== undefined 
+                ? `${(aircraft.baro_rate * 0.00508).toFixed(1)} m/s (${aircraft.baro_rate} ft/min)`
+                : 'Unknown'}
+            </p>
           </div>
         </div>
         

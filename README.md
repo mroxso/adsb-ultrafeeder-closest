@@ -7,8 +7,15 @@ ADSB Ultrafeeder Closest is a web application that displays the closest flight d
 ## Features
 
 - Shows the closest flight from ADSB ultrafeeder data
+- Displays flight details including:
+  - Altitude in kilometers (with feet equivalent)
+  - Speed in km/h (with knots equivalent)
+  - Vertical speed in m/s (with feet per minute equivalent)
+  - Aircraft type and registration when available
+  - Distance from home location
+  - Direction, coordinates and signal strength
 - Modern, responsive UI
-- Real-time updates
+- Real-time updates (5-second refresh)
 
 ## Tech Stack
 
